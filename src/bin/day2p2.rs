@@ -48,16 +48,11 @@ fn read_input_from_file(path: &'static str) -> Vec<Game> {
     }).collect();
 }
 
-const MAX_RED: usize = 12;
-const MAX_GREEN: usize = 13;
-const MAX_BLUE: usize = 14;
-
-fn color_is_ok(a: Option<usize>, max: usize) -> bool {
-    if let Some(v) = a {
-        return v <= max;
-    } else {
-        return true;
-    };
+fn get_min(a: Option<usize>) -> usize {
+    match a {
+        Some(v) => v,
+        None => 1,
+    }
 }
 
 fn calc(v: Vec<Game>) -> usize {
@@ -65,19 +60,10 @@ fn calc(v: Vec<Game>) -> usize {
 
     for game in v {
         let r = game.red.into_iter().reduce(cmp::max);
-        if !color_is_ok(r, MAX_RED) {
-            continue;
-        }
         let g = game.green.into_iter().reduce(cmp::max);
-        if !color_is_ok(g, MAX_GREEN) {
-            continue;
-        }
         let b = game.blue.into_iter().reduce(cmp::max);
-        if !color_is_ok(b, MAX_BLUE) {
-            continue;
-        }
 
-        sum += game.id;
+        sum += get_min(r) * get_min(g) * get_min(b);
     }
 
     return sum;
@@ -95,7 +81,8 @@ mod tests {
     #[test]
     fn base_test() {
         let v = read_input_from_file("d2test.txt");
-        assert!(calc(v) == 8);
+        let a = calc(v);
+        assert!(a == 2286);
     }
 }
 
