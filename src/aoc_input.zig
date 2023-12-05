@@ -1,4 +1,5 @@
 const std = @import("std");
+const mem = std.mem;
 const Allocator = std.mem.Allocator;
 pub const string_view = []const u8;
 
@@ -29,4 +30,16 @@ pub fn read_aoc_input(allocator: Allocator, file_name: string_view) !Self {
     }
 
     return self;
+}
+
+pub fn readList(allocator: Allocator, str: string_view) !std.ArrayList(usize) {
+    var iter = mem.tokenizeScalar(u8, str, ' ');
+    var list = std.ArrayList(usize).init(allocator);
+    errdefer list.deinit();
+    while (iter.next()) |raw| {
+        var s = mem.trim(u8, raw, "\n\r ");
+        var v = std.fmt.parseInt(usize, s, 10) catch continue;
+        try list.append(v);
+    }
+    return list;
 }
