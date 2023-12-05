@@ -2,6 +2,7 @@ const std = @import("std");
 const mem = std.mem;
 const Allocator = std.mem.Allocator;
 const debug = std.debug;
+const Pool = std.Thread.Pool;
 const aoc_input = @import("aoc_input.zig");
 const string_view = aoc_input.string_view;
 const read_aoc_input = aoc_input.read_aoc_input;
@@ -60,15 +61,20 @@ fn findMinLocation(seed_record: [2]usize, all_lists_slices: [][]Record) void {
     var min_location: ?usize = null;
     for (seed_start..(seed_start + seed_count + 1)) |seed| {
         var location_v = parseLocation(seed, all_lists_slices);
-        if (min_location) |min| {
-            if (location_v < min) {
-                min_location = location_v;
-            }
-        } else {
-            min_location = location_v;
-        }
+        min_location = findMin(min_location, location_v);
     }
-    debug.print("min location: {?}\n", .{min_location});
+    debug.print("{?}\n", .{min_location});
+}
+
+fn findMin(a: ?usize, b: usize) usize {
+    if (a) |a_v| {
+        if (b < a_v) {
+            return b;
+        }
+        return a_v;
+    } else {
+        return b;
+    }
 }
 
 fn calc(allocator: Allocator, lines: []const string_view) !void {
@@ -138,13 +144,27 @@ fn calc(allocator: Allocator, lines: []const string_view) !void {
     // prepare maps -->
 
     // YES, I JUST DO THREADS
-    var threads = std.ArrayList(std.Thread).init(allocator);
+    var pool = Pool{ .allocator = allocator, .threads = undefined };
+    try Pool.init(&pool, .{ .allocator = allocator });
+    defer pool.deinit();
     for (seeds) |seed_record| {
-        try threads.append(try std.Thread.spawn(.{ .allocator = allocator }, findMinLocation, .{ seed_record, &all_lists_slices }));
+        var start = seed_record[0];
+        var count = seed_record[1];
+        while (count > 0) {
+            var todo_c: usize = undefined;
+            if (count >= 200000000) {
+                todo_c = 200000000;
+            } else {
+                todo_c = count;
+            }
+            var rec = [2]usize{ start, todo_c };
+            try pool.spawn(findMinLocation, .{ rec, &all_lists_slices });
+            start += todo_c;
+            count -= todo_c;
+        }
     }
-    for (threads.items) |t| {
-        t.join();
-    }
+    var wg = std.Thread.WaitGroup{};
+    pool.waitAndWork(&wg);
 }
 
 pub fn main() !void {
@@ -156,7 +176,7 @@ pub fn main() !void {
     defer aocInput.deinit();
 
     var sum = try calc(allocator, aocInput.list.items);
-    debug.print("sum: {}\n", .{sum});
+    _ = sum;
 }
 
 test "simple test" {
