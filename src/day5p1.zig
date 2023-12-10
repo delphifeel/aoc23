@@ -39,16 +39,11 @@ fn parseLocation(seed: usize, all_lists: [][]Record) usize {
     return next_number;
 }
 
-fn sortAssocList(context: void, l: Record, r: Record) bool {
-    _ = context;
-    return l[0] < r[0];
-}
-
 fn calc(allocator: Allocator, lines: []const string_view) !usize {
-    // seeds: 79 14 55 13
     var seeds = try parseSeeds(allocator, lines[0]);
     defer seeds.deinit();
 
+    // associations
     var seed_to_soil = AssocList.init(allocator);
     var soil_to_fert = AssocList.init(allocator);
     var fert_to_water = AssocList.init(allocator);
@@ -72,6 +67,7 @@ fn calc(allocator: Allocator, lines: []const string_view) !usize {
 
     var i: usize = 0;
 
+    // fill associations
     while (i < map_lines.len) {
         var line_raw = map_lines[i];
         i += 1;
@@ -103,10 +99,7 @@ fn calc(allocator: Allocator, lines: []const string_view) !usize {
         }
     }
 
-    for (all_lists_slices) |sl| {
-        mem.sort(Record, sl, {}, sortAssocList);
-    }
-
+    // actual calculations
     var min_location: ?usize = null;
     for (seeds.items) |seed| {
         var location_v = parseLocation(seed, &all_lists_slices);

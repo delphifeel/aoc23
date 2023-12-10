@@ -141,8 +141,6 @@ fn calc(allocator: Allocator, lines: []const string_view) !void {
         mem.sort(Record, sl, {}, sortAssocList);
     }
 
-    // prepare maps -->
-
     // YES, I JUST DO THREADS
     var pool = Pool{ .allocator = allocator, .threads = undefined };
     try Pool.init(&pool, .{ .allocator = allocator });
