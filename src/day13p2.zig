@@ -130,30 +130,34 @@ fn compare_cols(group_lines: []const string_view, left: usize, right: usize) usi
 }
 
 // Maybe use matrix instead of list of list
-fn calcGroup(allocator: Allocator, group_lines: []string_view) usize {
+fn calcGroup(allocator: Allocator, group_lines: []string_view, compare_to: ?usize) usize {
     _ = allocator;
+    var v: usize = 0;
     // find for rows reflection
     for (1..group_lines.len) |i| {
-        var v = compare_rows(group_lines, i - 1, i);
-        if (v > 0) {
+        v = compare_rows(group_lines, i - 1, i);
+        var compare_to_v = compare_to orelse 0;
+        if ((v > 0) and (v != compare_to_v)) {
             return v;
         }
     }
 
     // find for cols reflection
     for (1..group_lines[0].len) |col| {
-        var v = compare_cols(group_lines, col - 1, col);
-        if (v > 0) {
+        v = compare_cols(group_lines, col - 1, col);
+        var compare_to_v = compare_to orelse 0;
+        if ((v > 0) and (v != compare_to_v)) {
             return v;
         }
     }
     return 0;
 }
 
-fn testGroup(allocator: Allocator, group_lines: [][]u8) usize {
+fn testGroup(allocator: Allocator, group_lines: [][]u8, group_id: usize) usize {
     // calc original
-    var orig_sum = calcGroup(allocator, group_lines);
+    var orig_sum = calcGroup(allocator, group_lines, null);
     debug.print("---------------------\n", .{});
+    debug.print("group {}\n", .{group_id});
     debug.print("orig sum: {}\n", .{orig_sum});
 
     // testing all row possibilities
@@ -168,7 +172,7 @@ fn testGroup(allocator: Allocator, group_lines: [][]u8) usize {
 
             group_lines[i][col] = '.';
             group_lines[j][col] = '.';
-            var sum = calcGroup(allocator, group_lines);
+            var sum = calcGroup(allocator, group_lines, orig_sum);
             group_lines[i][col] = prev_i;
             group_lines[j][col] = prev_j;
             debug.print("sum: {}\n", .{sum});
@@ -178,7 +182,7 @@ fn testGroup(allocator: Allocator, group_lines: [][]u8) usize {
 
             group_lines[i][col] = '#';
             group_lines[j][col] = '#';
-            sum = calcGroup(allocator, group_lines);
+            sum = calcGroup(allocator, group_lines, orig_sum);
             group_lines[i][col] = prev_i;
             group_lines[j][col] = prev_j;
             debug.print("sum: {}\n", .{sum});
@@ -200,7 +204,7 @@ fn testGroup(allocator: Allocator, group_lines: [][]u8) usize {
 
             group_lines[row][i] = '.';
             group_lines[row][j] = '.';
-            var sum = calcGroup(allocator, group_lines);
+            var sum = calcGroup(allocator, group_lines, orig_sum);
             group_lines[row][i] = prev_i;
             group_lines[row][j] = prev_j;
             debug.print("sum: {}\n", .{sum});
@@ -210,7 +214,7 @@ fn testGroup(allocator: Allocator, group_lines: [][]u8) usize {
 
             group_lines[row][i] = '#';
             group_lines[row][j] = '#';
-            sum = calcGroup(allocator, group_lines);
+            sum = calcGroup(allocator, group_lines, orig_sum);
             group_lines[row][i] = prev_i;
             group_lines[row][j] = prev_j;
             debug.print("sum: {}\n", .{sum});
@@ -219,20 +223,25 @@ fn testGroup(allocator: Allocator, group_lines: [][]u8) usize {
             }
         }
     }
+    debug.panic("error", .{});
+    //debug.print("ERROR: same sum\n", .{});
     return orig_sum;
 }
 
 fn calc(allocator: Allocator, lines: [][]u8) usize {
     var sum: usize = 0;
     var start_i: usize = 0;
+    var group_id: usize = 1;
     for (lines, 0..) |line, i| {
         if (line.len == 0) {
-            sum += testGroup(allocator, lines[start_i..i]);
+            sum += testGroup(allocator, lines[start_i..i], group_id);
+            group_id += 1;
             start_i = i + 1;
         }
     }
     if (start_i < lines.len) {
-        sum += testGroup(allocator, lines[start_i..]);
+        group_id += 1;
+        sum += testGroup(allocator, lines[start_i..], 99999999);
     }
     return sum;
 }
