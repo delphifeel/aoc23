@@ -5,7 +5,7 @@ pub const string_view = []const u8;
 
 const Self = @This();
 allocator: Allocator,
-list: std.ArrayList(string_view),
+list: std.ArrayList([]u8),
 
 pub fn deinit(self: *Self) void {
     for (self.list.items) |item| {
@@ -21,7 +21,7 @@ pub fn read_aoc_input(allocator: Allocator, file_name: string_view) !Self {
     var buffered = std.io.bufferedReader(file.reader());
     var reader = buffered.reader();
     var buf: [3000]u8 = undefined;
-    var list = std.ArrayList(string_view).init(allocator);
+    var list = std.ArrayList([]u8).init(allocator);
     var self = Self{ .allocator = allocator, .list = list };
     errdefer self.deinit();
     while (try reader.readUntilDelimiterOrEof(&buf, '\n')) |line| {
