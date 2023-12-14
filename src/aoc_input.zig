@@ -24,7 +24,11 @@ pub fn read_aoc_input(allocator: Allocator, file_name: string_view) !Self {
     var list = std.ArrayList([]u8).init(allocator);
     var self = Self{ .allocator = allocator, .list = list };
     errdefer self.deinit();
-    while (try reader.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+    while (try reader.readUntilDelimiterOrEof(&buf, '\n')) |line_raw| {
+        var line = line_raw;
+        if (line[line.len - 1] == '\r') {
+            line = line[0 .. line.len - 1];
+        }
         var line_copy = try allocator.dupe(u8, line);
         try self.list.append(line_copy);
     }
