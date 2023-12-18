@@ -1,0 +1,153 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+)
+
+func dupe(src [][]bool) [][]bool {
+    rows := int64(len(src))
+    cols := int64(len(src[0]))
+    res := alloc2dArray(rows, cols)
+	for i := int64(0); i < rows; i++ {
+		copy(res[i], src[i])
+	}
+    return res
+}
+
+func resetTo(dest [][]bool, src [][]bool) {
+    rows := int64(len(src))
+	for i := int64(0); i < rows; i++ {
+		copy(dest[i], src[i])
+	}
+}
+
+func traverse(proceed [][]bool, lines []string, pos [2]int64, dir [2]int64, steps uint) (uint64, bool) {
+	rowsCount := len(lines)
+	colsCount := len(lines[0])
+
+	if pos[0] == int64(rowsCount)-1 && pos[1] == int64(colsCount)-1 {
+		c := lines[pos[0]][pos[1]] - 48
+		return uint64(c), true
+	}
+	if pos[0] == -1 || pos[0] == int64(rowsCount) {
+		return 0, false
+	}
+	if pos[1] == -1 || pos[1] == int64(colsCount) {
+		return 0, false
+	}
+    if proceed[pos[0]][pos[1]] {
+        return 0, false
+    }
+    proceed[pos[0]][pos[1]] = true
+    proceedCopy := dupe(proceed)
+
+	nextDir := [2]int64{}
+	nextPos := [2]int64{}
+	sums := [3]uint64{}
+	sumsLen := 0
+
+	c := lines[pos[0]][pos[1]] - 48
+	//fmt.Printf("%v -> ", c)
+
+	// rotate left
+	nextDir[0] = -dir[1]
+	nextDir[1] = -dir[0]
+	nextPos[0] = pos[0] + nextDir[0]
+	nextPos[1] = pos[1] + nextDir[1]
+	v, done := traverse(proceed, lines, nextPos, nextDir, 0)
+	if done {
+		sums[sumsLen] += v
+		sumsLen += 1
+	}
+    resetTo(proceed, proceedCopy)
+
+	// rotate right
+	nextDir[0] = dir[1]
+	nextDir[1] = dir[0]
+	nextPos[0] = pos[0] + nextDir[0]
+	nextPos[1] = pos[1] + nextDir[1]
+	v, done = traverse(proceed, lines, nextPos, nextDir, 0)
+	if done {
+		sums[sumsLen] += v
+		sumsLen += 1
+	}
+    resetTo(proceed, proceedCopy)
+
+	if steps < 3 {
+		// go straight
+		nextDir[0] = dir[0]
+		nextDir[1] = dir[1]
+		nextPos[0] = pos[0] + nextDir[0]
+		nextPos[1] = pos[1] + nextDir[1]
+		v, done = traverse(proceed, lines, nextPos, nextDir, steps+1)
+		if done {
+			sums[sumsLen] += v
+			sumsLen += 1
+		}
+        resetTo(proceed, proceedCopy)
+	}
+
+
+	if sumsLen == 0 {
+		return 0, false
+	}
+
+	minV := sums[0]
+	for i := 1; i < sumsLen; i++ {
+		if minV == 0 || (sums[i] != 0 && sums[i] < minV) {
+			minV = sums[i]
+		}
+	}
+
+
+	return minV + uint64(c), true
+}
+
+func calc(lines []string) uint64 {
+    proceed := alloc2dArray(int64(len(lines)), int64(len(lines[0])))
+	a, _ := traverse(proceed, lines, [2]int64{0, 1}, [2]int64{0, 1}, 0)
+    proceed = alloc2dArray(int64(len(lines)), int64(len(lines[0])))
+	b, _ := traverse(proceed, lines, [2]int64{1, 0}, [2]int64{1, 0}, 0)
+
+	fmt.Printf("a: %v, b: %v\n", a, b)
+
+	return 0
+}
+
+func main() {
+	aocInput := readAocInput("d17test.txt")
+	fmt.Println(calc(aocInput))
+}
+
+// ___ HELPERS ___
+func alloc2dArray(rows int64, cols int64) [][]bool {
+	res := make([][]bool, rows)
+	for i := int64(0); i < rows; i++ {
+		res[i] = make([]bool, cols)
+		for j := int64(0); j < cols; j++ {
+			res[i][j] = false
+		}
+	}
+	return res
+}
+
+func readAocInput(fileName string) []string {
+	file, err := os.Open(fileName)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	res := []string{}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		res = append(res, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		panic(err)
+	}
+	return res
+}
