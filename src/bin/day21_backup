@@ -1,0 +1,114 @@
+uA
+se std::fs::read_to_string;
+use std::collections::{HashSet, VecDeque};
+
+fn read_input_from_file(path: &'static str) -> Vec<String>{
+    let full = read_to_string(path).unwrap();
+    return full.lines().map(|line| {
+        return line.to_owned();
+    }).collect();
+}
+
+fn is_pos_avail(pos: (isize, isize), lines: &Vec<String>, visited: &HashSet<(isize, isize)>) -> bool {
+    if visited.contains(&pos) {
+        return false;
+    }
+
+    let rows: isize = lines.len().try_into().unwrap();
+    let cols: isize = lines.get(0).unwrap().len().try_into().unwrap();
+    if pos.0 == -1 || pos.0 == rows {
+        return false;
+    }
+    if pos.1 == -1 || pos.1 == cols {
+        return false;
+    }
+    let pos_v_0: usize = pos.0.try_into().unwrap();
+    let pos_v_1: usize = pos.1.try_into().unwrap();
+    let c = lines.get(pos_v_0).unwrap().chars().nth(pos_v_1).unwrap();
+    if c == '#' {
+        return false;
+    }
+    return true;
+}
+
+fn calc(lines: Vec<String>) -> usize {
+    // find S pos
+    let mut pos: (isize, isize) = (0, 0);
+    for (row, line) in lines.iter().enumerate() {
+        for (col, c) in line.chars().enumerate() {
+            if c == 'S' {
+                pos = (row.try_into().unwrap(), col.try_into().unwrap());
+            }
+        }
+    }
+
+    // do graph work
+    
+    let mut steps_left = 1;
+
+    let mut visited: HashSet<(isize, isize)> = HashSet::new();
+
+    let mut q = VecDeque::new();
+    q.push_back(pos);
+
+    while let Some(curr) = q.pop_front() {
+        if steps_left == 0 {
+            break;
+        }
+
+        visited.insert(curr);
+        let y: usize = curr.0.try_into().unwrap();
+        let v = lines.get(y).unwrap();
+        let cr: Vec<char> = v.chars().collect();
+
+        print!("{:?}\n", curr);
+        // top
+        let mut new_curr = (curr.0 - 1, curr.1);
+        if is_pos_avail(new_curr, &lines, &visited) {
+            steps_left += 1;
+            q.push_back(new_curr);
+        }
+        // right
+        new_curr = (curr.0, curr.1 + 1);
+        if is_pos_avail(new_curr, &lines, &visited) {
+            steps_left += 1;
+            q.push_back(new_curr);
+        }
+        // bottom
+        new_curr = (curr.0 + 1, curr.1);
+        if is_pos_avail(new_curr, &lines, &visited) {
+            steps_left += 1;
+            q.push_back(new_curr);
+        }
+        // left
+        new_curr = (curr.0, curr.1 - 1);
+        if is_pos_avail(new_curr, &lines, &visited) {
+            steps_left += 1;
+            q.push_back(new_curr);
+        }
+
+        steps_left -= 1;
+    }
+
+    println!("vs: {:?}\n", visited);
+
+
+    return visited.len();
+}
+
+fn main() {
+    let v = read_input_from_file("d21test.txt");
+    println!("{}", calc(v));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn base_test() {
+        let v = read_input_from_file("d21test.txt");
+        let _ = calc(v);
+    }
+}
+

@@ -26,7 +26,7 @@ pub fn read_aoc_input(allocator: Allocator, file_name: string_view) !Self {
     errdefer self.deinit();
     while (try reader.readUntilDelimiterOrEof(&buf, '\n')) |line_raw| {
         var line = line_raw;
-        if (line[line.len - 1] == '\r') {
+        if (line.len > 0 and line[line.len - 1] == '\r') {
             line = line[0 .. line.len - 1];
         }
         var line_copy = try allocator.dupe(u8, line);
